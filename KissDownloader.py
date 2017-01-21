@@ -296,7 +296,7 @@ class KissDownloader:
         #     os.rename(location, path)
         # else:
         #     print("Download of " + name + " failed")
-        return path,
+        return path
 
     def frange(self, start, stop, step):
         i = start
