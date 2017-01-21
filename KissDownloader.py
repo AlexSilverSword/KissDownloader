@@ -2,6 +2,9 @@ import pip
 import time
 import configparser
 import os
+import webbrowser
+import re
+
 try:
     pip.main(['install', '--upgrade', 'pip'])
 except:
@@ -24,8 +27,8 @@ except:
     pip.main(['install', 'cfscrape'])
     import cfscrape
 
-
-
+import comtypes.client as cc
+import comtypes
 
 # stuff that I may do... eventually
 # TODO error management
@@ -53,11 +56,9 @@ class KissDownloader:
 
         self.rootPage = ""
         self.file_extension = ""
-        self.debug_mode = False
+        self.debug_mode = True
 
         self.download(params)
-
-
 
     def login(self, user, pw, site):
         global config
@@ -92,7 +93,7 @@ class KissDownloader:
         soup = BeautifulSoup(self.rootPage, 'html.parser')
         ###for kisscartoon.me
 
-        if site == "kisscartoon.me":
+        if site == "kisscartoon.se":
             if episode % 1 == 0:
                 ###for non special episodes
                 episode = int(episode)
@@ -200,12 +201,13 @@ class KissDownloader:
                 page = self.scraper.get(episode_page)
                 if self.debug_mode:
                     pass
-                    # print(page.url)
+                    print(page.url)
                     # print(page.text)
                 scraper_url = page.url
                 if "Special/AreYouHuman?" in str(scraper_url):
                     print("please click url and prove your human")
                     print(page.url)
+                    webbrowser.open_new(str(page.url))
                     input("Press Enter to continue...")
                     print("please wait for system to refresh")
                     time.sleep(10)
@@ -251,25 +253,50 @@ class KissDownloader:
             os.stat(destination)
         except:
             os.makedirs(destination)
-
         filename = name
         path = destination + filename
-        obj = pySmartDL.SmartDL(url, destination, progress_bar=False, fix_urls=True)
-        obj.start(blocking=False)
-        location = obj.get_dest()
+        print(path)
 
-        while True:
-            if obj.isFinished():
-                break
-            print(name + "\t " + str(float("{0:.2f}".format((float(obj.get_progress())*100)))) + "% done at " + pySmartDL.utils.sizeof_human(obj.get_speed(human=False)) + "/s")
-            #*epiode name* 0.38% done at 2.9 MB/s
-            time.sleep(1)
-        if obj.isFinished():
-            time.sleep(3)
-            os.rename(location, path)
-        else:
-            print("Download of " + name + " failed")
-        return path
+        referrer = ""
+        cookie = ""
+        postData = ""
+        user = ""
+        password = ""
+        cc.GetModule(['{ECF21EAB-3AA8-4355-82BE-F777990001DD}', 1, 0])
+        # not sure about the syntax here, but cc.GetModule will tell you the name of the wrapper it generated
+        import comtypes.gen.IDManLib as IDMan
+        idm1 = cc.CreateObject("IDMan.CIDMLinkTransmitter", None, None, IDMan.ICIDMLinkTransmitter2)
+        # idm1.SendLinkToIDM("URL", referrer, cookie, postData, user, password, r"C:\Users\Marno\Downloads\Video", "FILENAME", 0)
+
+        idm1.SendLinkToIDM(url, referrer, cookie, postData, user, password, path ,name, 0)
+
+        # obj = pySmartDL.SmartDL(url, destination, progress_bar=False, fix_urls=True,threads=8)
+        # obj.start(blocking=False)
+        # location = obj.get_dest()
+        #
+        # while True:
+        #     if obj.isFinished():
+        #         break
+        #     progress = obj.get_progress() * 100
+        #     if obj.get_eta() > 0 and progress < 100:
+        #         print(name + "\t " + str(float("{0:.2f}".format((float(obj.get_progress())*100)))) + "% done at " + pySmartDL.utils.sizeof_human(obj.get_speed(human=False)) + "/s,   ETA: "+ obj.get_eta(human=True))
+        #     #*epiode name* 0.38% done at 2.9 MB/s
+        #     speed = obj.get_speed(human=False)
+        #     progress = obj.get_progress()*100
+        #     if speed <= 20000 and progress != 100:
+        #         print("Speed dropping to quickly, pause initiated")
+        #         obj.pause()
+        #         time.sleep(5)
+        #         obj.unpause()
+        #     time.sleep(0.8)
+        #     if progress == 100 and obj.get_eta() == 0:
+        #         print("Rebuilding ", name)
+        # if obj.isFinished():
+        #     time.sleep(8)
+        #     os.rename(location, path)
+        # else:
+        #     print("Download of " + name + " failed")
+        return path,
 
     def frange(self, start, stop, step):
         i = start
@@ -283,57 +310,72 @@ class KissDownloader:
 
     def download(self, p):
         episode_list = []
-
-
+        # #p = [0 user, 1 password, 2 anime, 3 season, 4 episode_min, 5 episode_max, 6 destination, 7 quality, 8 site]
         #p = [user, password, title, anime, season, episode_min, episode_max, destination, quality, site]
         # takes a list of parameters and uses them to download the show
         print("Logging in Please Wait")
-        l = self.login(p[0], p[1], p[9])  # 0 are the indices of the username and password from get_params()
+        l = self.login(p[0], p[1], p[8])  # 0 are the indices of the username and password from get_params()
         login_count = 0
         while not l:
             if login_count > 3:
                 print("Login Failed")
                 break
             print("login failed, try again")
-            l = self.login(p[0], p[1], p[9])
+            l = self.login(p[0], p[1], p[8])
             login_count = login_count + 1
 
         time.sleep(3)
-        self.rootPage = self.scraper.get(p[3]).content  # 3 is the index of the url
+        self.rootPage = self.scraper.get(p[2]).content  # 2 is the index of the url
         time.sleep(3)
 
-
         print("Getting episode urls please wait")
-        for e in self.frange(float(p[5]), int(p[6])+1, 0.5):  # 5 and 6 are episodes min and max
+        soup = BeautifulSoup(self.rootPage, 'html.parser')
+        scraper_title = soup.title.string
+        if p[8] == "kissanime.ru":
+            prt1, prt2 = scraper_title.split("anime |")
+        if p[8] == "kisscartoon.se":
+            prt1, prt2 = scraper_title.split("cartoon |")
+        if p[8] == "kissasian.com":
+            prt1, prt2 = scraper_title.split("drama |")
+        # badchars = re.compile(r'[^A-Za-z0-9_.() ]+|^\.|\.$|^ | $|^$')
+        # title = badchars.sub('-', str(prt1).strip())
+        title = str(prt1).strip()
+
+        if p[6].endswith('/'):
+            destination = p[6] + title + "/"
+        else:
+            destination =  p[6] + "/" + title + "/"
+
+        for e in self.frange(float(p[4]), int(p[5])+1, 0.5):  # 4 and 5 are episodes min and max
             if self.debug_mode:
-                print("-----------------")
+                print("------------------------------------------------")
                 print("trying to get link for episode " + str(e))
 
-            page = self.get_episode_page(e, p[9])
+            page = self.get_episode_page(e, p[8])
             # page = [page_url, isUncensored]
             if page[0] == "":
                 pass
             else:
-                video = self.get_video_src(page[0], p[8]) #8 is the quality
+                video = self.get_video_src(page[0], p[7]) #7 is the quality
                 # video = [url, file_extension]
                 if video[0] != 'false':
                     if page[1]:  # if episode is called uncensored
                         if e % 1 == 0:
                             e = int(e)
-                            filename = p[2] + " S" + str(p[4].zfill(2)) + "E" + str(e).zfill(3) + " Uncensored" + video[1]  # 2 is the title, 4 is the season
+                            filename = title + " Episode" + str(e).zfill(3) + " Uncensored" + video[1]  # 2 is the title, 4 is the season
                         else:
-                            filename = p[2] + " S" + str(p[4].zfill(2)) + "E" + self.zpad(str(e), 3) + " Uncensored" + video[1]  # 2 is the title, 4 is the season
+                            filename = title + " Episode" + self.zpad(str(e), 3) + " Uncensored" + video[1]  # 2 is the title, 4 is the season
                     else:
                         if e % 1 == 0:
                             e = int(e)
-                            filename = p[2] + " S" + str(p[4].zfill(2)) + "E" + str(e).zfill(3) + video[1]  # 2 is the title, 4 is the season
+                            filename = title + " Episode " + str(e).zfill(3) + video[1]  # 2 is the title, 4 is the season
                         else:
-                            filename = p[2] + " S" + str(p[4].zfill(2)) + "E" + self.zpad(str(e), 3) + video[1]  # 2 is the title, 4 is the season
+                            filename = title + " Episode " + self.zpad(str(e), 3) + video[1]  # 2 is the title, 4 is the season
                     print("Got link for " + filename)
-                    episode_list.append((video[0], filename, p[7]))
+                    episode_list.append((video[0], filename, destination))
                 else: print("Unable to link for episode " + str(e) + " trying increasing the quality")
         if self.debug_mode:
-            print(episode_list)
+            print('episode_list', episode_list)
             #logs url list
             f = open('log.txt', 'w')
             f.write(str(episode_list) + '\n')
@@ -351,14 +393,16 @@ class KissDownloader:
             else:
                 self.download_video(url, filename, destination)
             print("downloaded ", filename)
-        print("done downloading " + p[2] + " Season " + p[4])
-
+        os.system("TASKKILL /F /IM IDMan.exe")
+        os.startfile("C:\Program Files (x86)\Internet Download Manager\IDMan.exe")
+        print("done downloading " + title)
 
 if __name__ == "__main__":
     #params = [user, password, title, anime, season, episode_min, episode_max, destination, quality, site]
     print('please run from KissDownloaderGUI.py')
     KissDownloader
     episodes_list = []
+    print(episodes_list)
     for tup in episodes_list:
         url = tup[0]
         filename = tup[1]
