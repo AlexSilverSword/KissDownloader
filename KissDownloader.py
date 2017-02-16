@@ -255,7 +255,7 @@ class KissDownloader:
             os.makedirs(destination)
         filename = name
         path = destination + filename
-        print(path)
+        print('PATH', path, filename)
 
         referrer = ""
         cookie = ""
@@ -263,12 +263,12 @@ class KissDownloader:
         user = ""
         password = ""
         cc.GetModule(['{ECF21EAB-3AA8-4355-82BE-F777990001DD}', 1, 0])
-        # not sure about the syntax here, but cc.GetModule will tell you the name of the wrapper it generated
         import comtypes.gen.IDManLib as IDMan
         idm1 = cc.CreateObject("IDMan.CIDMLinkTransmitter", None, None, IDMan.ICIDMLinkTransmitter2)
-        # idm1.SendLinkToIDM("URL", referrer, cookie, postData, user, password, r"C:\Users\Marno\Downloads\Video", "FILENAME", 0)
-
-        idm1.SendLinkToIDM(url, referrer, cookie, postData, user, password, path ,name, 0)
+        # idm1.SendLinkToIDM("URL", referrer, cookie, postData, user, password, r"C:\Users\Alex\Downloads\Video", "FILENAME", 0)
+        # To run IDM download it from https://www.internetdownloadmanager.com/download.html OR
+        # http://mirror2.internetdownloadmanager.com/idman627build5.exe?b=1&filename=idman627build5.exe
+        idm1.SendLinkToIDM(url, referrer, cookie, postData, user, password, destination ,name, 0)
 
         # obj = pySmartDL.SmartDL(url, destination, progress_bar=False, fix_urls=True,threads=8)
         # obj.start(blocking=False)
@@ -296,7 +296,7 @@ class KissDownloader:
         #     os.rename(location, path)
         # else:
         #     print("Download of " + name + " failed")
-        return path
+        return path,
 
     def frange(self, start, stop, step):
         i = start
@@ -329,17 +329,23 @@ class KissDownloader:
         time.sleep(3)
 
         print("Getting episode urls please wait")
+        # To parse rootPage html for info about anime
         soup = BeautifulSoup(self.rootPage, 'html.parser')
+        # 'scraper_title = soup.title.string' extracts title string for eg. Chaos;Child (Dub) anime | Watch Chaos;Child (Dub)
+        # But what follows after anime | is redundant
         scraper_title = soup.title.string
+        # Now for each kiss site only the first part is important
         if p[8] == "kissanime.ru":
             prt1, prt2 = scraper_title.split("anime |")
         if p[8] == "kisscartoon.se":
             prt1, prt2 = scraper_title.split("cartoon |")
         if p[8] == "kissasian.com":
             prt1, prt2 = scraper_title.split("drama |")
-        # badchars = re.compile(r'[^A-Za-z0-9_.() ]+|^\.|\.$|^ | $|^$')
-        # title = badchars.sub('-', str(prt1).strip())
-        title = str(prt1).strip()
+        # Still working on removing invalid characters ( / ? < > \ : * |) for Windows filenames
+        badchars = re.compile(r'[^A-Za-z0-9_.() ]+|^\.|\.$|^ | $|^$')
+        # replace invalid characters with a dash and strip away excess whitespaces
+        title = badchars.sub('-', str(prt1).strip())
+        # title = str(prt1).strip()
 
         if p[6].endswith('/'):
             destination = p[6] + title + "/"
@@ -396,6 +402,7 @@ class KissDownloader:
         os.system("TASKKILL /F /IM IDMan.exe")
         os.startfile("C:\Program Files (x86)\Internet Download Manager\IDMan.exe")
         print("done downloading " + title)
+
 
 if __name__ == "__main__":
     #params = [user, password, title, anime, season, episode_min, episode_max, destination, quality, site]
