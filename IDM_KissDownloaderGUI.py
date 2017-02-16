@@ -111,7 +111,7 @@ class App(Frame):
 
         params = [self.user_name.get(), self.user_password.get(), self.url.get(), str(self.season_num.get()), str(self.episode_min.get()), str(self.episode_max.get()), destination, self.quality_select.get(), self.site_select.get()]
         # print(params)
-        IDM_KissDownloader(params)
+        KissDownloader(params)
 
 root = Tk() 
 app = App()
