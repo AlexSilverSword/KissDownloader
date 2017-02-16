@@ -1,4 +1,4 @@
-from KissDownloader import *
+from IDM_KissDownloader import *
 from tkinter import *
 from tkinter.ttk import *
 
@@ -10,12 +10,11 @@ class App(Frame):
         self.grid()
         self.master.geometry("585x320")
 
-
     # create label for site select
         self.site_select_label = Label(self, text="Select Site to download from: ").grid(row=1, column=1)
     # create a Combobox with site to choose from
     # currently not in effect
-        self.available_sites = ['kissanime.ru', 'kisscartoon.me', 'kissasian.com']
+        self.available_sites = ['kissanime.ru', 'kisscartoon.se', 'kissasian.com']
         self.site_select = Combobox(self, values=self.available_sites)
         self.site_select.grid(row=1, column=2, padx=32, pady=8)
     # create username label and field
@@ -30,40 +29,36 @@ class App(Frame):
         self.url_label = Label(self, text="Enter URL for season: ").grid(row=4, column=1)
         self.url = Entry(self, width=30)
         self.url.grid(row=4, column=2)
-    # create season name label and field
-        self.title_label = Label(self, text="Enter anime Title: ").grid(row=5, column=1)
-        self.title = Entry(self, width=30)
-        self.title.grid(row=5, column=2)
     # create season number label and field
-        self.season_num_label = Label(self, text="Enter Season number: ").grid(row=6, column=1)
+        self.season_num_label = Label(self, text="Enter Season number: ").grid(row=5, column=1)
         self.season_num = Entry(self, width=30)
-        self.season_num.grid(row=6, column=2)
+        self.season_num.grid(row=5, column=2)
     # create episode min label and field
-        self.episode_min_label = Label(self, text="Enter Episode Min: ").grid(row=7, column=1)
+        self.episode_min_label = Label(self, text="Enter Episode Min: ").grid(row=6, column=1)
         self.episode_min = Entry(self, width=30)
-        self.episode_min.grid(row=7, column=2)
+        self.episode_min.grid(row=6, column=2)
     # create episode max label and field
-        self.episode_max_label = Label(self, text="Enter Episode Max: ").grid(row=8, column=1)
+        self.episode_max_label = Label(self, text="Enter Episode Max: ").grid(row=7, column=1)
         self.episode_max = Entry(self, width=30)
-        self.episode_max.grid(row=8, column=2)
+        self.episode_max.grid(row=7, column=2)
     # create root destination label and field
-        self.destination_label = Label(self, text="Enter Root Destination: ").grid(row=9, column=1)
+        self.destination_label = Label(self, text="Enter Root Destination: ").grid(row=8, column=1)
         self.destination = Entry(self, width=30)
-        self.destination.grid(row=9, column=2)
+        self.destination.grid(row=8, column=2)
     # create label for quality select
-        self.site_select_label = Label(self, text="Select Quality to download: ").grid(row=10, column=1)
+        self.site_select_label = Label(self, text="Select Quality to download: ").grid(row=9, column=1)
     # create a Combobox with quality to choose from
         self.available_quality = ["1920x1080.mp4", "1280x720.mp4", "640x360.mp4", "320x180.3pg", "960x720.mp4", "480x360.mp4", "320x240.3pg"]
         self.quality_select = Combobox(self, values=self.available_quality)
-        self.quality_select.grid(row=10, column=2, padx=32, pady=8)
+        self.quality_select.grid(row=9, column=2, padx=32, pady=8)
     # import config button
         self.download_button = Button(self, text='Import Config')
         self.download_button['command'] = self.fill_gui_from_config
-        self.download_button.grid(row=11, column=2)
+        self.download_button.grid(row=10, column=2)
     # download button
         self.download_button = Button(self, text='Download')
         self.download_button['command'] = self.run_download
-        self.download_button.grid(row=11, column=3)
+        self.download_button.grid(row=10, column=3)
 
     def fill_gui_from_config(self):
         global config
@@ -87,10 +82,6 @@ class App(Frame):
             self.user_password.insert (0, auth["password"])
 
         show = config["show"]
-        if len(show["title"]) != 0:
-            self.title.delete(0, END)
-            self.title.insert(0, show["title"])
-
         if len(show["anime"]) != 0:
             self.url.delete(0, END)
             self.url.insert(0, show["anime"])
@@ -116,16 +107,11 @@ class App(Frame):
             self.quality_select.set(show["quality"])
 
     def run_download(self):
-        destination_folder = self.destination.get().replace("\\", "/")
+        destination = self.destination.get().replace("\\", "/")
 
-        if destination_folder.endswith('/'):
-            destination = destination_folder + self.title.get() + "/"
-        else:
-            destination = destination_folder + "/" + self.title.get() + "/"
-        params = [self.user_name.get(), self.user_password.get(), self.title.get(), self.url.get(), str(self.season_num.get()), str(self.episode_min.get()), str(self.episode_max.get()), destination, self.quality_select.get(), self.site_select.get()]
-        print(params)
-        KissDownloader(params)
-
+        params = [self.user_name.get(), self.user_password.get(), self.url.get(), str(self.season_num.get()), str(self.episode_min.get()), str(self.episode_max.get()), destination, self.quality_select.get(), self.site_select.get()]
+        # print(params)
+        IDM_KissDownloader(params)
 
 root = Tk() 
 app = App()
